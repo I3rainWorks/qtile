@@ -75,6 +75,7 @@ widgets = {
     "QuickExit": "quick_exit",
     "Sep": "sep",
     "She": "she",
+    "SolarEdge": "solaredge",
     "Spacer": "spacer",
     "StockTicker": "stock_ticker",
     "SwapGraph": "graph",
