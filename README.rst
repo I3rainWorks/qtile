@@ -2,7 +2,7 @@
 
 **A full-featured, hackable tiling window manager written and configured in Python**
 
-|website| |pypi| |ci| |rtd| |license|
+|website| |pypi| |ci| |rtd| |license| |black| |coverage|
 
 Features
 ========
@@ -24,8 +24,16 @@ Community
 Qtile is supported by a dedicated group of users. If you need any help, please
 don't hesitate to fire off an email to our mailing list or join us on IRC.
 
-:Mailing List: http://groups.google.com/group/qtile-dev
+:Mailing List: https://groups.google.com/group/qtile-dev
 :IRC: irc://irc.oftc.net:6667/qtile
+
+Example code
+============
+
+Check out the `qtile-examples`_ repo which contains examples of users' configurations,
+scripts and other useful links.
+
+.. _`qtile-examples`: https://github.com/qtile/qtile-examples
 
 Contributing
 ============
@@ -34,16 +42,19 @@ Please report any suggestions, feature requests, bug reports, or annoyances to
 the GitHub `issue tracker`_. There are also a few `tips & tricks`_,
 and `guidelines`_ for contributing in the documentation.
 
+Please also consider submitting useful scripts etc. to the qtile-examples repo
+(see above).
+
 .. _`issue tracker`: https://github.com/qtile/qtile/issues
-.. _`tips & tricks`: http://docs.qtile.org/en/latest/manual/hacking.html
-.. _`guidelines`: http://docs.qtile.org/en/latest/manual/contributing.html
+.. _`tips & tricks`: https://docs.qtile.org/en/latest/manual/hacking.html
+.. _`guidelines`: https://docs.qtile.org/en/latest/manual/contributing.html
 
 .. |logo| image:: https://raw.githubusercontent.com/qtile/qtile/master/logo.png
     :alt: Logo
-    :target: http://www.qtile.org
+    :target: https://www.qtile.org
 .. |website| image:: https://img.shields.io/badge/website-qtile.org-blue.svg
     :alt: Website
-    :target: http://www.qtile.org
+    :target: https://www.qtile.org
 .. |pypi| image:: https://img.shields.io/pypi/v/qtile.svg
     :alt: PyPI
     :target: https://pypi.org/project/qtile/
@@ -52,10 +63,16 @@ and `guidelines`_ for contributing in the documentation.
     :target: https://github.com/qtile/qtile/actions
 .. |rtd| image:: https://readthedocs.org/projects/qtile/badge/?version=latest
     :alt: Read the Docs
-    :target: http://docs.qtile.org/en/latest/
+    :target: https://docs.qtile.org/en/latest/
 .. |license| image:: https://img.shields.io/github/license/qtile/qtile.svg
     :alt: License
     :target: https://github.com/qtile/qtile/blob/master/LICENSE
+.. |black| image:: https://img.shields.io/badge/code%20style-black-000000.svg
+    :alt: Codestyle
+    :target: https://github.com/psf/black
+.. |coverage| image:: https://coveralls.io/repos/github/qtile/qtile/badge.svg
+    :alt: Coverage
+    :target: https://coveralls.io/github/qtile/qtile
 
 
 Maintainers

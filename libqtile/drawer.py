@@ -36,8 +36,9 @@ from libqtile import pangocffi, utils
 
 
 class TextLayout:
-    def __init__(self, drawer, text, colour, font_family, font_size,
-                 font_shadow, wrap=True, markup=False):
+    def __init__(
+        self, drawer, text, colour, font_family, font_size, font_shadow, wrap=True, markup=False
+    ):
         self.drawer, self.colour = drawer, colour
         layout = drawer.ctx.create_layout()
         layout.set_alignment(pangocffi.ALIGN_CENTER)
@@ -67,7 +68,7 @@ class TextLayout:
         if self.markup:
             # pangocffi doesn't like None here, so we use "".
             if value is None:
-                value = ''
+                value = ""
             attrlist, value, accel_char = pangocffi.parse_markup(value)
             self.layout.set_attributes(attrlist)
         self.layout.set_text(utils.scrub_to_utf8(value))
@@ -130,7 +131,9 @@ class TextLayout:
         self.drawer.ctx.show_layout(self.layout)
 
     def framed(self, border_width, border_color, pad_x, pad_y, highlight_color=None):
-        return TextFrame(self, border_width, border_color, pad_x, pad_y, highlight_color=highlight_color)
+        return TextFrame(
+            self, border_width, border_color, pad_x, pad_y, highlight_color=highlight_color
+        )
 
 
 class TextFrame:
@@ -141,13 +144,13 @@ class TextFrame:
         self.drawer = self.layout.drawer
         self.highlight_color = highlight_color
 
-        if isinstance(pad_x, collections.Iterable):
+        if isinstance(pad_x, collections.abc.Iterable):
             self.pad_left = pad_x[0]
             self.pad_right = pad_x[1]
         else:
             self.pad_left = self.pad_right = pad_x
 
-        if isinstance(pad_y, collections.Iterable):
+        if isinstance(pad_y, collections.abc.Iterable):
             self.pad_top = pad_y[0]
             self.pad_bottom = pad_y[1]
         else:
@@ -156,10 +159,11 @@ class TextFrame:
     def draw(self, x, y, rounded=True, fill=False, line=False, highlight=False):
         self.drawer.set_source_rgb(self.border_color)
         opts = [
-            x, y,
+            x,
+            y,
             self.layout.width + self.pad_left + self.pad_right,
             self.layout.height + self.pad_top + self.pad_bottom,
-            self.border_width
+            self.border_width,
         ]
         if line:
             if highlight:
@@ -183,10 +187,7 @@ class TextFrame:
             else:
                 self.drawer.rectangle(*opts)
         self.drawer.ctx.stroke()
-        self.layout.draw(
-            x + self.pad_left,
-            y + self.pad_top
-        )
+        self.layout.draw(x + self.pad_left, y + self.pad_top)
 
     def draw_fill(self, x, y, rounded=True):
         self.draw(x, y, rounded=rounded, fill=True)

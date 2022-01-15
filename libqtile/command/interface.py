@@ -27,17 +27,8 @@ from abc import ABCMeta, abstractmethod
 from typing import Any, Dict, List, Tuple, Union
 
 from libqtile import ipc
-from libqtile.command.base import (
-    CommandError,
-    CommandException,
-    CommandObject,
-    SelectError,
-)
-from libqtile.command.graph import (
-    CommandGraphCall,
-    CommandGraphNode,
-    SelectorType,
-)
+from libqtile.command.base import CommandError, CommandException, CommandObject, SelectError
+from libqtile.command.graph import CommandGraphCall, CommandGraphNode, SelectorType
 from libqtile.log_utils import logger
 
 SUCCESS = 0
@@ -87,9 +78,9 @@ class CommandInterface(metaclass=ABCMeta):
 
         Parameters
         ----------
-        node : CommandGraphNode
+        node: CommandGraphNode
             The node to check for commands
-        command : str
+        command: str
             The name of the command to check for
 
         Returns
@@ -104,11 +95,11 @@ class CommandInterface(metaclass=ABCMeta):
 
         Parameters
         ----------
-        node : CommandGraphNode
+        node: CommandGraphNode
             The node to check for items
-        object_type : str
+        object_type: str
             The type of object to check for items.
-        command : str
+        command: str
             The name of the item to check for
 
         Returns
@@ -126,7 +117,7 @@ class QtileCommandInterface(CommandInterface):
 
         Parameters
         ----------
-        command_object : CommandObject
+        command_object: CommandObject
             The command object to use for resolving the commands and items
             against.
         """
@@ -148,10 +139,13 @@ class QtileCommandInterface(CommandInterface):
             The keyword arguments to pass into the command graph call.
         """
         obj = self._command_object.select(call.selectors)
-
+        cmd = None
         try:
             cmd = obj.command(call.name)
         except SelectError:
+            pass
+
+        if cmd is None:
             return "No such command."
 
         logger.debug("Command: %s(%s, %s)", call.name, args, kwargs)
@@ -162,9 +156,9 @@ class QtileCommandInterface(CommandInterface):
 
         Parameters
         ----------
-        node : CommandGraphNode
+        node: CommandGraphNode
             The node to check for commands
-        command : str
+        command: str
             The name of the command to check for
 
         Returns
@@ -181,11 +175,11 @@ class QtileCommandInterface(CommandInterface):
 
         Parameters
         ----------
-        node : CommandGraphNode
+        node: CommandGraphNode
             The node to check for items
-        object_type : str
+        object_type: str
             The type of object to check for items.
-        item : str
+        item: str
             The name or index of the item to check for
 
         Returns
@@ -208,7 +202,7 @@ class IPCCommandInterface(CommandInterface):
 
         Parameters
         ----------
-        ipc_client : ipc.Client
+        ipc_client: ipc.Client
             The client that is to be used to resolve the calls.
         """
         self._client = ipc_client
@@ -228,9 +222,7 @@ class IPCCommandInterface(CommandInterface):
         kwargs:
             The keyword arguments to pass into the command graph call.
         """
-        status, result = self._client.send((
-            call.parent.selectors, call.name, args, kwargs
-        ))
+        status, result = self._client.send((call.parent.selectors, call.name, args, kwargs))
         if status == SUCCESS:
             return result
         if status == ERROR:
@@ -245,9 +237,9 @@ class IPCCommandInterface(CommandInterface):
 
         Parameters
         ----------
-        node : CommandGraphNode
+        node: CommandGraphNode
             The node to check for commands
-        command : str
+        command: str
             The name of the command to check for
 
         Returns
@@ -268,11 +260,11 @@ class IPCCommandInterface(CommandInterface):
 
         Parameters
         ----------
-        node : CommandGraphNode
+        node: CommandGraphNode
             The node to check for items
-        object_type : str
+        object_type: str
             The type of object to check for items.
-        command : str
+        command: str
             The name of the item to check for
 
         Returns

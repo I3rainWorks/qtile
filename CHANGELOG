@@ -1,4 +1,37 @@
-Qtile xxxxxx, released xxxxxxxxxx:
+Qtile x.x.x, released xxxx-xx-xx:
+    * features
+        - Add `place_right` option in the TreeTab layout to place the tab panel on the right side
+
+Qtile 0.19.0, released 2021-12-22:
+    * features
+        - Add ability to draw borders to the Bar. Can customise size and colour per edge.
+        - Add `StatusNotifier` widget implementing the `StatusNotifierItem` specification.
+          NB Widget does not provide context menus.
+        - Add `total` bandwidth format value to the Net widget.
+        - Scratchpad groups could be defined as single so that only one of the scratchpad in the group is visible
+          at a given time.
+        - All scratchpads in a Scratchpad group can be hidden with hide_all() function.
+        - For saving states of scratchpads during restart, we use wids instead of pids.
+        - Scratchpads can now be defined with an optional matcher to match with window properties.
+        - `Qtile.cmd_reload_config` is added for reloading the config without completely restarting.
+        - Window.cmd_togroup's argument `groupName` should be changed to
+          `group_name`. For the time being a log warning is in place and a
+          migration is added. In the future `groupName` will fail.
+        - Add `min/max_ratio` to Tile layout and fix bug where windows can extend offscreen.
+        - Add ability for widget `mouse_callbacks` to take `lazy` calls (similar to keybindings)
+        - Add `aliases` to `lazy.spawncmd()` which takes a dictionary mapping convenient aliases
+          to full command lines.
+        - Add a new 'prefix' option to the net widget to display speeds with a static unit (e.g. MB).
+        - `lazy.group.toscreen()` now does not toggle groups by default. To get this behaviour back, use
+          `lazy.group.toscreen(toggle=True)`
+        - Tile layout has new `margin_on_single` and `border_on_single` option to specify
+          whether to draw margin and border when there is only one window.
+        - Thermal zone widget.
+        - Allow TextBox-based widgets to display in vertical bars.
+        - Added a focused attribute to `lazy.function.when` which can be used to Match on focused windows.
+        - Allow to update Image widget with update() function by giving a new path.
+
+Qtile 0.18.1, released 2021-09-16:
     * features
         - All layouts will accept a list of colors for border_* options with which
           they will draw multiple borders on the appropriate windows.

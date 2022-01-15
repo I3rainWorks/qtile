@@ -29,6 +29,7 @@ from libqtile.widget import base
 
 class Image(base._Widget, base.MarginMixin):
     """Display a PNG image on the bar"""
+
     orientations = base.ORIENTATION_BOTH
     defaults = [
         ("scale", True, "Enable/Disable image scaling"),
@@ -46,6 +47,9 @@ class Image(base._Widget, base.MarginMixin):
 
     def _configure(self, qtile, bar):
         base._Widget._configure(self, qtile, bar)
+        self._update_image()
+
+    def _update_image(self):
         self.img = None
 
         if not self.filename:
@@ -82,9 +86,9 @@ class Image(base._Widget, base.MarginMixin):
         self.drawer.ctx.restore()
 
         if self.bar.horizontal:
-            self.drawer.draw(offsetx=self.offset, width=self.width)
+            self.drawer.draw(offsetx=self.offset, offsety=self.offsety, width=self.width)
         else:
-            self.drawer.draw(offsety=self.offset, height=self.width)
+            self.drawer.draw(offsety=self.offset, offsetx=self.offsetx, height=self.width)
 
     def calculate_length(self):
         if self.img is None:
@@ -94,3 +98,13 @@ class Image(base._Widget, base.MarginMixin):
             return self.img.width + (self.margin_x * 2)
         else:
             return self.img.height + (self.margin_y * 2)
+
+    def cmd_update(self, filename):
+        old_length = self.calculate_length()
+        self.filename = filename
+        self._update_image()
+
+        if self.calculate_length() == old_length:
+            self.draw()
+        else:
+            self.bar.draw()

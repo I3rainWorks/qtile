@@ -23,9 +23,10 @@ from __future__ import annotations
 import os
 import typing
 
+from wlroots.util.box import Box
 from wlroots.util.clock import Timespec
 from wlroots.util.region import PixmanRegion32
-from wlroots.wlr_types import Box, Matrix
+from wlroots.wlr_types import Matrix
 from wlroots.wlr_types import Output as wlrOutput
 from wlroots.wlr_types import OutputDamage
 from wlroots.wlr_types.layer_shell_v1 import (
@@ -39,12 +40,13 @@ from libqtile.backend.wayland.wlrq import HasListeners
 from libqtile.log_utils import logger
 
 if typing.TYPE_CHECKING:
-    from typing import List, Tuple
+    from typing import List, Tuple, Union
 
     from wlroots.wlr_types import Surface
 
     from libqtile.backend.wayland.core import Core
     from libqtile.backend.wayland.window import WindowType
+    from libqtile.backend.wayland.wlrq import Dnd
     from libqtile.config import Screen
 
 
@@ -73,7 +75,7 @@ class Output(HasListeners):
                 # First test output
                 wlr_output.set_custom_mode(800, 600, 0)
             else:
-                # Secound test output
+                # Second test output
                 wlr_output.set_custom_mode(640, 480, 0)
             wlr_output.commit()
 
@@ -84,11 +86,13 @@ class Output(HasListeners):
     @property
     def screen(self) -> Screen:
         assert self.core.qtile is not None
-        x, y, w, h = self.get_geometry()
-        for screen in self.core.qtile.screens:
-            if screen.x == x and screen.y == y:
-                if screen.width == w and screen.height == h:
-                    return screen
+
+        if len(self.core.qtile.screens) > 1:
+            x, y, w, h = self.get_geometry()
+            for screen in self.core.qtile.screens:
+                if screen.x == x and screen.y == y:
+                    if screen.width == w and screen.height == h:
+                        return screen
         return self.core.qtile.current_screen
 
     def _on_destroy(self, _listener, _data):
@@ -111,27 +115,40 @@ class Output(HasListeners):
 
                 now = Timespec.get_monotonic_time()
                 renderer = self.renderer
-                renderer.begin(*wlr_output.effective_resolution())
+                renderer.begin(wlr_output._ptr.width, wlr_output._ptr.height)
+                scale = wlr_output.scale
 
                 if self.wallpaper:
-                    renderer.render_texture(self.wallpaper, self.transform_matrix, 0, 0, 1)
+                    width, height = wlr_output.effective_resolution()
+                    box = Box(0, 0, int(width * scale), int(height * scale))
+                    matrix = Matrix.project_box(
+                        box, wlr_output.transform, 0, wlr_output.transform_matrix
+                    )
+                    renderer.render_texture_with_matrix(self.wallpaper, matrix, 1)
                 else:
                     renderer.clear([0, 0, 0, 1])
 
-                mapped = self.layers[LayerShellV1Layer.BACKGROUND] \
-                    + self.layers[LayerShellV1Layer.BOTTOM] \
-                    + self.core.mapped_windows \
-                    + self.layers[LayerShellV1Layer.TOP] \
+                mapped = (
+                    self.layers[LayerShellV1Layer.BACKGROUND]
+                    + self.layers[LayerShellV1Layer.BOTTOM]
+                    + self.core.mapped_windows
+                    + self.layers[LayerShellV1Layer.TOP]
                     + self.layers[LayerShellV1Layer.OVERLAY]
+                )
 
                 for window in mapped:
                     if isinstance(window, Internal):
-                        renderer.render_texture(
-                            window.texture,
-                            self.transform_matrix,
-                            window.x - self.x,  # layout coordinates -> output coordinates
-                            window.y - self.y,
-                            window.opacity,
+                        box = Box(
+                            int((window.x - self.x) * scale),
+                            int((window.y - self.y) * scale),
+                            int(window.width * scale),
+                            int(window.height * scale),
+                        )
+                        matrix = Matrix.project_box(
+                            box, wlr_output.transform, 0, wlr_output.transform_matrix
+                        )
+                        renderer.render_texture_with_matrix(
+                            window.texture, matrix, window.opacity
                         )
                     else:
                         rdata = (
@@ -143,6 +160,9 @@ class Output(HasListeners):
                             wlr_output.scale,
                         )
                         window.surface.for_each_surface(self._render_surface, rdata)
+
+                if self.core.live_dnd:
+                    self._render_dnd_icon(now)
 
                 wlr_output.render_software_cursors(damage=damage)
                 renderer.end()
@@ -203,6 +223,26 @@ class Output(HasListeners):
         self.renderer.render_texture_with_matrix(texture, matrix, opacity)
         surface.send_frame_done(now)
 
+    def _render_dnd_icon(self, now: Timespec) -> None:
+        """Render the drag-n-drop icon if there is one."""
+        dnd = self.core.live_dnd
+        assert dnd
+        icon = dnd.wlr_drag.icon
+        if icon.mapped:
+            texture = icon.surface.get_texture()
+            if texture:
+                scale = self.wlr_output.scale
+                box = Box(
+                    int((dnd.x - self.x) * scale),
+                    int((dnd.y - self.y) * scale),
+                    int(icon.surface.current.width * scale),
+                    int(icon.surface.current.height * scale),
+                )
+                inverse = wlrOutput.transform_invert(icon.surface.current.transform)
+                matrix = Matrix.project_box(box, inverse, 0, self.transform_matrix)
+                self.renderer.render_texture_with_matrix(texture, matrix, 1)
+                icon.surface.send_frame_done(now)
+
     def get_geometry(self) -> Tuple[int, int, int, int]:
         width, height = self.wlr_output.effective_resolution()
         return int(self.x), int(self.y), width, height
@@ -224,9 +264,9 @@ class Output(HasListeners):
                 if (state.anchor & LayerSurfaceV1Anchor.HORIZONTAL) and ww == 0:
                     x = margin.left
                     ww = ow - margin.left - margin.right
-                elif (state.anchor & LayerSurfaceV1Anchor.LEFT):
+                elif state.anchor & LayerSurfaceV1Anchor.LEFT:
                     x = margin.left
-                elif (state.anchor & LayerSurfaceV1Anchor.RIGHT):
+                elif state.anchor & LayerSurfaceV1Anchor.RIGHT:
                     x = ow - ww - margin.right
                 else:
                     x = int(ow / 2 - ww / 2)
@@ -235,9 +275,9 @@ class Output(HasListeners):
                 if (state.anchor & LayerSurfaceV1Anchor.VERTICAL) and wh == 0:
                     y = margin.top
                     wh = oh - margin.top - margin.bottom
-                elif (state.anchor & LayerSurfaceV1Anchor.TOP):
+                elif state.anchor & LayerSurfaceV1Anchor.TOP:
                     y = margin.top
-                elif (state.anchor & LayerSurfaceV1Anchor.BOTTOM):
+                elif state.anchor & LayerSurfaceV1Anchor.BOTTOM:
                     y = oh - wh - margin.bottom
                 else:
                     y = int(oh / 2 - wh / 2)
@@ -284,17 +324,17 @@ class Output(HasListeners):
 
         self.core.stack_windows()
 
-    def contains(self, win: WindowType) -> bool:
+    def contains(self, rect: Union[WindowType, Dnd]) -> bool:
         """Returns whether the given window is visible on this output."""
-        if win.x + win.width < self.x:
+        if rect.x + rect.width < self.x:
             return False
-        if win.y + win.height < self.y:
+        if rect.y + rect.height < self.y:
             return False
 
         ow, oh = self.wlr_output.effective_resolution()
-        if self.x + ow < win.x:
+        if self.x + ow < rect.x:
             return False
-        if self.y + oh < win.y:
+        if self.y + oh < rect.y:
             return False
 
         return True

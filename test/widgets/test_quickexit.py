@@ -36,11 +36,7 @@ def test_trigger_and_cancel(manager_nospawn, minimal_conf_noscreen):
     qewidget = widget.QuickExit(timer_interval=100)
 
     config = minimal_conf_noscreen
-    config.screens = [
-        libqtile.config.Screen(
-            top=libqtile.bar.Bar([qewidget], 10)
-        )
-    ]
+    config.screens = [libqtile.config.Screen(top=libqtile.bar.Bar([qewidget], 10))]
 
     manager_nospawn.start(config)
     topbar = manager_nospawn.c.bar["top"]
@@ -66,11 +62,7 @@ def test_exit(manager_nospawn, minimal_conf_noscreen):
     qewidget = widget.QuickExit(timer_interval=0.001, countdown_start=1)
 
     config = minimal_conf_noscreen
-    config.screens = [
-        libqtile.config.Screen(
-            top=libqtile.bar.Bar([qewidget], 10)
-        )
-    ]
+    config.screens = [libqtile.config.Screen(top=libqtile.bar.Bar([qewidget], 10))]
 
     manager_nospawn.start(config)
     topbar = manager_nospawn.c.bar["top"]
@@ -78,7 +70,7 @@ def test_exit(manager_nospawn, minimal_conf_noscreen):
     # Click widget to start countdown
     topbar.fake_button_press(0, "top", 0, 0, button=1)
 
-    # Trying to access bar should now give IPCError or a ConnectionResetError 
+    # Trying to access bar should now give IPCError or a ConnectionResetError
     # as qtile has shutdown
     with pytest.raises((IPCError, ConnectionResetError)):
         assert topbar.info()

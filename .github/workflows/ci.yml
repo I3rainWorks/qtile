@@ -18,7 +18,7 @@ jobs:
             matrix:
                 # if you change one of these, be sure to update
                 # /tox.ini:[gh-actions] as well
-                python-version: [pypy-3.7, 3.7, 3.8, 3.9]
+                python-version: [pypy-3.7, 3.7, 3.8, 3.9, '3.10']
         steps:
             - uses: actions/checkout@v2
             - name: Set up python ${{ matrix.python-version }}
@@ -30,10 +30,11 @@ jobs:
                 sudo apt update
                 sudo apt install --no-install-recommends \
                   libdbus-1-dev libgirepository1.0-dev gir1.2-gtk-3.0 gir1.2-notify-0.7 gir1.2-gudev-1.0 graphviz \
-                  imagemagick libpulse-dev lm-sensors git xserver-xephyr xterm xvfb ninja-build libegl1-mesa-dev \
+                  imagemagick libpulse-dev git xserver-xephyr xterm xvfb ninja-build libegl1-mesa-dev \
                   libgles2-mesa-dev libgbm-dev libinput-dev libxkbcommon-dev libpixman-1-dev libpciaccess-dev \
                   dbus-x11 libnotify-bin
-                sudo pip -q install tox tox-gh-actions meson PyGObject
+                sudo pip -q install meson PyGObject
+                pip -q install "tox<4" tox-gh-actions 
             - name: Build wayland
               run: |
                 wget -q --no-check-certificate https://wayland.freedesktop.org/releases/wayland-$WAYLAND.tar.xz
@@ -74,8 +75,26 @@ jobs:
                 meson build -Dexamples=false --prefix=/usr
                 ninja -C build
                 sudo ninja -C build install
-            - name: run tests
+            - name: Run Tests
               run: |
                 [ "$(grep -c -P '\t' CHANGELOG)" = "0" ]
                 tox
+            - name: Upload coverage data to coveralls.io
+              run: |
+                pip -q install coveralls
+                coveralls --service=github
+              env:
+                GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+                COVERALLS_FLAG_NAME: ${{ matrix.python-version }}
+                COVERALLS_PARALLEL: true
 
+    coverage:
+        name: Finalize Coverage
+        needs: build
+        runs-on: ubuntu-20.04
+        steps:
+            - name: Coveralls Finished
+              uses: coverallsapp/github-action@master
+              with:
+                github-token: ${{ secrets.GITHUB_TOKEN }}
+                parallel-finished: true

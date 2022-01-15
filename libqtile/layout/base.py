@@ -29,6 +29,7 @@ from libqtile.command.base import CommandObject, ItemT
 
 class Layout(CommandObject, configurable.Configurable, metaclass=ABCMeta):
     """This class defines the API that should be exposed by all layouts"""
+
     defaults = []  # type: List[Tuple[str, Any, str]]
 
     def __init__(self, **config):
@@ -96,10 +97,7 @@ class Layout(CommandObject, configurable.Configurable, metaclass=ABCMeta):
 
     def info(self):
         """Returns a dictionary of layout information"""
-        return dict(
-            name=self.name,
-            group=self.group.name if self.group else None
-        )
+        return dict(name=self.name, group=self.group.name if self.group else None)
 
     def cmd_info(self):
         """Return a dictionary of info for this object"""
@@ -294,7 +292,7 @@ class _ClientList:
         Positive values are after the client.
 
         Use parameter 'client_position' to insert the given client at 4 specific
-        positions : top, bottom, after_current, before_current.
+        positions: top, bottom, after_current, before_current.
         """
         if client_position is not None:
             if client_position == "after_current":
@@ -406,8 +404,7 @@ class _ClientList:
         """
         pos = max(0, self.current_index + offset_to_current)
         if pos < len(self.clients):
-            self.clients = (self.clients[:pos:] + other.clients +
-                            self.clients[pos::])
+            self.clients = self.clients[:pos:] + other.clients + self.clients[pos::]
         else:
             self.clients.extend(other.clients)
 
@@ -435,7 +432,8 @@ class _ClientList:
     def __str__(self):
         curr = self.current_client
         return "_WindowCollection: " + ", ".join(
-            [('[%s]' if c == curr else '%s') % c.name for c in self.clients])
+            [("[%s]" if c == curr else "%s") % c.name for c in self.clients]
+        )
 
     def info(self):
         return dict(
@@ -490,11 +488,14 @@ class _SimpleLayoutBase(Layout):
         client = self.focus_next(self.clients.current_client) or self.focus_first()
         self.group.focus(client, True)
 
-    def add(self, client, offset_to_current=0):
-        return self.clients.add(client, offset_to_current)
+    def add(self, client, offset_to_current=0, client_position=None):
+        return self.clients.add(client, offset_to_current, client_position)
 
     def remove(self, client):
         return self.clients.remove(client)
+
+    def get_windows(self):
+        return self.clients.clients
 
     def info(self):
         d = Layout.info(self)

@@ -201,13 +201,14 @@ components that make up the widget. Examples of displaying text, icons and
 drawings are set out below.
 
 It is important to note that the bar controls the placing of the widget by
-assigning the ``offsetx`` value (for horizontal orientations) and ``offsety``
-value (for vertical orientations). Widgets should use this at the end of the
-``draw`` method.
+assigning the ``offsetx`` value (for horizontal positioning) and ``offsety``
+value (for vertical positioning). Widgets should use this at the end of the
+``draw`` method. Both ``offsetx`` and ``offsety`` are required as both values will
+be set if the bar is drawing a border.
 
 .. code:: python
 
-    self.drawer.draw(offsetx=self.offsetx, width=self.width)
+    self.drawer.draw(offsetx=self.offsetx, offsety=self.offsety, width=self.width)
 
 .. note::
 
@@ -431,6 +432,76 @@ For example, the Mpris2 widget uses the following code:
 ``dbus-next`` can also be used to query properties, call methods etc. on dbus
 interfaces. Refer to the `dbus-next documentation <https://python-dbus-next.readthedocs.io/en/latest/>`_
 for more information on how to use the module.
+
+Mouse events
+============
+
+By default, widgets handle button presses and will call any function that is bound to the button in the
+``mouse_callbacks`` dictionary. The dictionary keys are as follows:
+
+ - ``Button1``: Left click
+ - ``Button2``: Middle click
+ - ``Button3``: Right click
+ - ``Button4``: Scroll up
+ - ``Button5``: Scroll down
+ - ``Button6``: Scroll left
+ - ``Button7``: Scroll right
+
+You can then define your button bindings in your widget (e.g. in ``__init__``):
+
+.. code:: python
+
+    class MyWidget(widget.TextBox)
+
+        def __init__(self, *args, **config):
+            widget.TextBox.__init__(self, *args, **kwargs)
+            self.add_callbacks(
+                {
+                    "Button1": self.left_click_method,
+                    "Button3": self.right_click_method
+                }
+            )
+
+.. note::
+
+    As well as functions, you can also bind ``LazyCall`` objects to button presses.
+    For example:
+
+    .. code:: python
+
+        self.add_callbacks(
+            {
+                "Button1": lazy.spawn("xterm"),
+            }
+        )
+
+In addition to button presses, you can also respond to mouse enter and leave events.
+For example, to make a clock show a longer date when you put your mouse over it, you
+can do the following:
+
+.. code:: python
+
+    class MouseOverClock(widget.Clock):
+        defaults = [
+            (
+                "long_format",
+                "%A %d %B %Y | %H:%M",
+                "Format to show when mouse is over widget."
+            )
+        ]
+
+        def __init__(self, **config):
+            widget.Clock.__init__(self, **config)
+            self.add_defaults(MouseOverClock.defaults)
+            self.short_format = self.format
+
+        def mouse_enter(self, *args, **kwargs):
+            self.format = self.long_format
+            self.bar.draw()
+
+        def mouse_leave(self, *args, **kwargs):
+            self.format = self.short_format
+            self.bar.draw()
 
 Debugging
 =========

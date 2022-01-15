@@ -77,7 +77,7 @@ def test_gen_poll_url_headers_and_json():
     gpurl = generic_poll_text.GenPollUrl(
         headers={"fake-header": "fake-value"},
         data={"argument": "data value"},
-        user_agent="qtile test"
+        user_agent="qtile test",
     )
 
     assert gpurl.headers["User-agent"] == "qtile test"
@@ -120,7 +120,6 @@ def test_gen_poll_url_xml_has_xmltodict(monkeypatch):
     monkeypatch.setattr(generic_poll_text, "Request", MockRequest)
     monkeypatch.setattr(generic_poll_text, "urlopen", Mockurlopen)
     generic_poll_text.Request.return_value = b"OK"
-    print(gpurl.poll())
     assert gpurl.poll()["test"] == "OK"
 
 
