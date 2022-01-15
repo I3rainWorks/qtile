@@ -27,12 +27,7 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 import xcffib
-from xcffib.xproto import (
-    ClientMessageData,
-    ClientMessageEvent,
-    EventMask,
-    SetMode,
-)
+from xcffib.xproto import ClientMessageData, ClientMessageEvent, EventMask, SetMode
 
 from libqtile import bar
 from libqtile.backend.x11 import window
@@ -42,9 +37,7 @@ XEMBED_PROTOCOL_VERSION = 0
 
 
 class Icon(window._Window):
-    _window_mask = EventMask.StructureNotify | \
-        EventMask.PropertyChange | \
-        EventMask.Exposure
+    _window_mask = EventMask.StructureNotify | EventMask.PropertyChange | EventMask.Exposure
 
     def __init__(self, win, qtile, systray):
         window._Window.__init__(self, win, qtile)
@@ -72,7 +65,7 @@ class Icon(window._Window):
     def handle_PropertyNotify(self, e):  # noqa: N802
         name = self.qtile.core.conn.atoms.get_name(e.atom)
         if name == "_XEMBED_INFO":
-            info = self.window.get_property('_XEMBED_INFO', unpack=int)
+            info = self.window.get_property("_XEMBED_INFO", unpack=int)
             if info and info[1]:
                 self.systray.bar.draw()
 
@@ -80,8 +73,8 @@ class Icon(window._Window):
 
     def handle_DestroyNotify(self, event):  # noqa: N802
         wid = event.window
-        del(self.qtile.windows_map[wid])
-        del(self.systray.icons[wid])
+        del self.qtile.windows_map[wid]
+        del self.systray.icons[wid]
         self.systray.bar.draw()
         return False
 
@@ -102,14 +95,13 @@ class Systray(window._Window, base._Widget):
         one.
     """
 
-    _window_mask = EventMask.StructureNotify | \
-        EventMask.Exposure
+    _window_mask = EventMask.StructureNotify | EventMask.Exposure
 
-    orientations = base.ORIENTATION_HORIZONTAL
+    orientations = base.ORIENTATION_BOTH
 
     defaults = [
-        ('icon_size', 20, 'Icon width'),
-        ('padding', 5, 'Padding between icons'),
+        ("icon_size", 20, "Icon width"),
+        ("padding", 5, "Padding between icons"),
     ]
 
     def __init__(self, **config):
@@ -117,11 +109,15 @@ class Systray(window._Window, base._Widget):
         self.add_defaults(Systray.defaults)
         self.icons = {}
         self.screen = 0
+        self._name = config.get("name", "systray")
 
     def calculate_length(self):
-        width = sum(i.width for i in self.icons.values())
-        width += self.padding * len(self.icons)
-        return width
+        if self.bar.horizontal:
+            length = sum(i.width for i in self.icons.values())
+        else:
+            length = sum(i.height for i in self.icons.values())
+        length += self.padding * len(self.icons)
+        return length
 
     def _configure(self, qtile, bar):
         base._Widget._configure(self, qtile, bar)
@@ -133,6 +129,9 @@ class Systray(window._Window, base._Widget):
         win = conn.create_window(-1, -1, 1, 1)
         window._Window.__init__(self, window.XWindow(conn, win.wid), qtile)
         qtile.windows_map[win.wid] = self
+
+        # window._Window.__init__ overwrites the widget name so we need to restore it
+        self.name = self._name
 
         # Even when we have multiple "Screen"s, we are setting up as the system
         # tray on a particular X display, that is the screen we need to
@@ -152,25 +151,22 @@ class Systray(window._Window, base._Widget):
             xcffib.xproto.Atom.VISUALID,
             32,
             1,
-            [self.drawer._visual.visual_id]
+            [self.drawer._visual.visual_id],
         )
 
         conn.conn.core.SetSelectionOwner(
-            win.wid,
-            atoms['_NET_SYSTEM_TRAY_S{:d}'.format(self.screen)],
-            xcffib.CurrentTime
+            win.wid, atoms["_NET_SYSTEM_TRAY_S{:d}".format(self.screen)], xcffib.CurrentTime
         )
         data = [
             xcffib.CurrentTime,
-            atoms['_NET_SYSTEM_TRAY_S{:d}'.format(self.screen)],
-            win.wid, 0, 0
+            atoms["_NET_SYSTEM_TRAY_S{:d}".format(self.screen)],
+            win.wid,
+            0,
+            0,
         ]
         union = ClientMessageData.synthetic(data, "I" * 5)
         event = ClientMessageEvent.synthetic(
-            format=32,
-            window=qtile.core._root.wid,
-            type=atoms['MANAGER'],
-            data=union
+            format=32, window=qtile.core._root.wid, type=atoms["MANAGER"], data=union
         )
         qtile.core._root.send_event(event, mask=EventMask.StructureNotify)
 
@@ -184,7 +180,7 @@ class Systray(window._Window, base._Widget):
 
         parent = self.bar.window.window
 
-        if opcode == atoms['_NET_SYSTEM_TRAY_OPCODE'] and message == 0:
+        if opcode == atoms["_NET_SYSTEM_TRAY_OPCODE"] and message == 0:
             w = window.XWindow(self.conn, wid)
             icon = Icon(w, self.qtile, self)
             self.icons[wid] = icon
@@ -194,7 +190,7 @@ class Systray(window._Window, base._Widget):
             self.conn.conn.core.ReparentWindow(wid, parent.wid, 0, 0)
             self.conn.conn.flush()
 
-            info = icon.window.get_property('_XEMBED_INFO', unpack=int)
+            info = icon.window.get_property("_XEMBED_INFO", unpack=int)
 
             if not info:
                 self.bar.draw()
@@ -206,18 +202,21 @@ class Systray(window._Window, base._Widget):
         return False
 
     def draw(self):
-        xoffset = self.padding
+        offset = self.padding
         self.drawer.clear(self.background or self.bar.background)
-        self.drawer.draw(offsetx=self.offset, width=self.length)
+        self.drawer.draw(offsetx=self.offset, offsety=self.offsety, width=self.length)
         for pos, icon in enumerate(self.icons.values()):
             icon.window.set_attribute(backpixmap=self.drawer.pixmap)
-            icon.place(
-                self.offset + xoffset,
-                self.bar.height // 2 - self.icon_size // 2,
-                icon.width, self.icon_size,
-                0,
-                None
-            )
+            if self.bar.horizontal:
+                xoffset = self.offsetx + offset
+                yoffset = self.bar.height // 2 - self.icon_size // 2 + self.offsety
+                step = icon.width
+            else:
+                xoffset = self.bar.width // 2 - self.icon_size // 2 + self.offsetx
+                yoffset = self.offsety + offset
+                step = icon.height
+
+            icon.place(xoffset, yoffset, icon.width, self.icon_size, 0, None)
             if icon.hidden:
                 icon.unhide()
                 data = [
@@ -225,25 +224,30 @@ class Systray(window._Window, base._Widget):
                     xcffib.xproto.Time.CurrentTime,
                     0,
                     self.bar.window.wid,
-                    XEMBED_PROTOCOL_VERSION
+                    XEMBED_PROTOCOL_VERSION,
                 ]
                 u = xcffib.xproto.ClientMessageData.synthetic(data, "I" * 5)
                 event = xcffib.xproto.ClientMessageEvent.synthetic(
-                    format=32,
-                    window=icon.wid,
-                    type=self.conn.atoms["_XEMBED"],
-                    data=u
+                    format=32, window=icon.wid, type=self.conn.atoms["_XEMBED"], data=u
                 )
                 self.window.send_event(event)
 
-            xoffset += icon.width + self.padding
+            offset += step + self.padding
 
     def finalize(self):
         base._Widget.finalize(self)
         atoms = self.conn.atoms
         self.conn.conn.core.SetSelectionOwner(
             0,
-            atoms['_NET_SYSTEM_TRAY_S{:d}'.format(self.screen)],
+            atoms["_NET_SYSTEM_TRAY_S{:d}".format(self.screen)],
             xcffib.CurrentTime,
         )
         self.hide()
+
+        root = self.qtile.core._root.wid
+        for wid in self.icons:
+            self.conn.conn.core.ReparentWindow(wid, root, 0, 0)
+        self.conn.conn.flush()
+
+        del self.qtile.windows_map[self.wid]
+        self.conn.conn.core.DestroyWindow(self.wid)

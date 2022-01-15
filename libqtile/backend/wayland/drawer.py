@@ -19,14 +19,13 @@ class Drawer(base.Drawer):
     A helper class for drawing and text layout.
 
     1. We stage drawing operations locally in memory using a cairo RecordingSurface.
-    2. Then apply these operations to our ImageSurface self._source
-    3. Then copy the pixels onto the wlr_texture self._target
+    2. Then apply these operations to our ImageSurface self._source.
+    3. Then copy the pixels onto the window's wlr_texture.
     """
 
     def __init__(self, qtile: Qtile, win: Internal, width: int, height: int):
         base.Drawer.__init__(self, qtile, win, width, height)
 
-        self._target = win.texture
         self._stride = cairocffi.ImageSurface.format_stride_for_width(
             cairocffi.FORMAT_ARGB32, self.width
         )
@@ -36,7 +35,7 @@ class Drawer(base.Drawer):
             context.set_source_rgba(*utils.rgb("#000000"))
             context.paint()
 
-    def draw(
+    def _draw(
         self,
         offsetx: int = 0,
         offsety: int = 0,
@@ -72,21 +71,15 @@ class Drawer(base.Drawer):
             context.paint()
 
         # Copy drawn ImageSurface data into rendered wlr_texture
-        self._target.write_pixels(
+        self._win.texture.write_pixels(  # type: ignore
             self._stride,
-            width,  # type: ignore
-            height,  # type: ignore
+            width,
+            height,
             cairocffi.cairo.cairo_image_surface_get_data(self._source._pointer),
             dst_x=offsetx,
             dst_y=offsety,
         )
         self._win.damage()  # type: ignore
-
-        # If the widget is not being reflected then clear RecordingSurface of operations
-        # If it is, we need to keep the RecordingSurface contents until the mirrors have
-        # been drawn
-        if not self.mirrors:
-            self._reset_surface()
 
     def clear(self, colour):
         # Draw background straight to ImageSurface

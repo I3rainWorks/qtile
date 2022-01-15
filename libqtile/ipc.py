@@ -94,9 +94,9 @@ class _IPC:
 
         Parameters
         ----------
-        data : bytes
+        data: bytes
             The incoming message to unpack
-        is_json : Optional[bool]
+        is_json: Optional[bool]
             If the message should be unpacked as json.  By default, try to
             unpack json and fallback gracefully to marshalled bytes.
 
@@ -118,11 +118,9 @@ class _IPC:
             assert len(data) >= HDRLEN
             size = struct.unpack(HDRFORMAT, data[:HDRLEN])[0]
             assert size >= len(data[HDRLEN:])
-            return marshal.loads(data[HDRLEN:HDRLEN + size]), False
+            return marshal.loads(data[HDRLEN : HDRLEN + size]), False
         except AssertionError as e:
-            raise IPCError(
-                "error reading reply! (probably the socket was disconnected)"
-            ) from e
+            raise IPCError("error reading reply! (probably the socket was disconnected)") from e
 
     @staticmethod
     def pack(msg: Any, *, is_json: bool = False) -> bytes:
@@ -142,10 +140,10 @@ class Client:
 
         Parameters
         ----------
-        socket_path : str
+        socket_path: str
             The file path to the file that is used to open the connection to
             the running IPC server.
-        is_json : bool
+        is_json: bool
             Pack and unpack messages as json
         """
         self.socket_path = socket_path
@@ -250,9 +248,7 @@ class Server:
         assert self.server is None
 
         logger.debug("Starting server")
-        server_coroutine = asyncio.start_unix_server(
-            self._server_callback, sock=self.sock
-        )
+        server_coroutine = asyncio.start_unix_server(self._server_callback, sock=self.sock)
         self.server = await server_coroutine
 
     async def close(self) -> None:

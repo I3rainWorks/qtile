@@ -25,8 +25,11 @@ from libqtile.widget import base
 
 
 class WindowCount(base._TextBox):
-    """A simple widget to show the number of windows in the current group."""
-    orientations = base.ORIENTATION_HORIZONTAL
+    """
+    A simple widget to display the number of windows in the
+    current group of the screen on which the widget is.
+    """
+
     defaults = [
         ("font", "sans", "Text font"),
         ("fontsize", None, "Font pixel size. Calculated if None."),
@@ -34,7 +37,7 @@ class WindowCount(base._TextBox):
         ("padding", None, "Padding left and right. Calculated if None."),
         ("foreground", "#ffffff", "Foreground colour."),
         ("text_format", "{num}", "Format for message"),
-        ("show_zero", False, "Show window count when no windows")
+        ("show_zero", False, "Show window count when no windows"),
     ]  # type: List[Tuple[str, Any, str]]
 
     def __init__(self, text=" ", width=bar.CALCULATED, **config):
@@ -55,7 +58,7 @@ class WindowCount(base._TextBox):
 
     def _wincount(self, *args):
         try:
-            self._count = len(self.qtile.current_group.windows)
+            self._count = len(self.bar.screen.group.windows)
         except AttributeError:
             self._count = 0
 
@@ -63,21 +66,17 @@ class WindowCount(base._TextBox):
 
     def _win_killed(self, window):
         try:
-            self._count = len(self.qtile.current_group.windows)
+            self._count = len(self.bar.screen.group.windows)
+            if window.group == self.bar.screen.group:
+                self._count -= 1
         except AttributeError:
             self._count = 0
-
-        if self._count and getattr(window, "group", None):
-            self._count -= 1
 
         self.update(self.text_format.format(num=self._count))
 
     def calculate_length(self):
         if self.text and (self._count or self.show_zero):
-            return min(
-                self.layout.width,
-                self.bar.width
-            ) + self.actual_padding * 2
+            return min(self.layout.width, self.bar.width) + self.actual_padding * 2
         else:
             return 0
 

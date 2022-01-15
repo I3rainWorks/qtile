@@ -55,7 +55,7 @@ class Keyboard(HasListeners):
 
         self.keyboard.set_repeat_info(25, 600)
         self.xkb_context = xkb.Context()
-        self._keymaps: Dict[Tuple[Optional[str], Optional[str]], xkb.Keymap] = {}
+        self._keymaps: Dict[Tuple[Optional[str], ...], xkb.Keymap] = {}
         self.set_keymap(None, None, None)
 
         self.add_listener(self.keyboard.modifiers_event, self._on_modifier)
@@ -72,12 +72,10 @@ class Keyboard(HasListeners):
         self, layout: Optional[str], options: Optional[str], variant: Optional[str]
     ) -> None:
         """
-        Set the keymap for this keyboard. `layout` and `options` correspond to
-        XKB_DEFAULT_LAYOUT and XKB_DEFAULT_OPTIONS and if not specified are taken from
-        the environment.
+        Set the keymap for this keyboard.
         """
-        if (layout, options) in self._keymaps:
-            keymap = self._keymaps[(layout, options)]
+        if (layout, options, variant) in self._keymaps:
+            keymap = self._keymaps[(layout, options, variant)]
         else:
             keymap = self.xkb_context.keymap_new_from_names(
                 layout=layout, options=options, variant=variant
@@ -90,6 +88,7 @@ class Keyboard(HasListeners):
         self.finalize()
 
     def _on_modifier(self, _listener, _data):
+        self.seat.set_keyboard(self.device)
         self.seat.keyboard_notify_modifiers(self.keyboard.modifiers)
 
     def _on_key(self, _listener, event: KeyboardKeyEvent):
@@ -101,9 +100,7 @@ class Keyboard(HasListeners):
         if event.state == KEY_PRESSED:
             # translate libinput keycode -> xkbcommon
             keycode = event.keycode + 8
-            layout_index = lib.xkb_state_key_get_layout(
-                self.keyboard._ptr.xkb_state, keycode
-            )
+            layout_index = lib.xkb_state_key_get_layout(self.keyboard._ptr.xkb_state, keycode)
             nsyms = lib.xkb_keymap_key_get_syms_by_level(
                 self.keyboard._ptr.keymap,
                 keycode,
