@@ -24,10 +24,11 @@ class SolarEdge(GenPollUrl):
         Load = myData['LOAD']['currentPower']
         Grid = myData['GRID']['currentPower']
         PV = myData['PV']['currentPower']
-        Overall = PV - Load
+        Overall = PV -Load
+        Overall_formatted = "{:.2f}".format((PV - Load))
         if Overall < 0:
            self.layout.colour = self.negativeColour
         else:
             self.layout.colour = self.positiveColour
 
-        return "PV:{pv} Load:{load} Grid:{grid} Overall:{overall}".format(pv=PV, load=Load, grid=Grid, overall=PV-Load)
+        return "PV:{pv} Load:{load} Grid:{grid} Overall:{overall}".format(pv=PV, load=Load, grid=Grid, overall=Overall_formatted)
